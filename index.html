@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+        <title>Babylon.js sample code</title>
+
+        <!-- Babylon.js -->
+        <script src="https://code.jquery.com/pep/0.4.2/pep.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
+        <script src="https://preview.babylonjs.com/cannon.js"></script>
+        <script src="https://preview.babylonjs.com/Oimo.js"></script>
+        <script src="https://preview.babylonjs.com/earcut.min.js"></script>
+        <script src="https://preview.babylonjs.com/babylon.js"></script>
+        <script src="https://preview.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+        <script src="https://preview.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+        <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
+        <script src="https://preview.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
+        <script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+        <script src="https://preview.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+        <script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
+
+        <style>
+            html, body {
+                overflow: hidden;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            #renderCanvas {
+                width: 100%;
+                height: 100%;
+                touch-action: none;
+            }
+        </style>
+    </head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <script>
+        var canvas = document.getElementById("renderCanvas");
+        var engine = new BABYLON.Engine(canvas, true);
+
+        var createScene = function () {
+        
+            // This creates a basic Babylon Scene object (non-mesh)
+            var scene = new BABYLON.Scene(engine);
+        
+            var camera = new BABYLON.ArcRotateCamera("Camera", 3 * Math.PI / 2, Math.PI / 3, 50, BABYLON.Vector3.Zero(), scene);
+        
+            camera.attachControl(canvas, true);
+        
+            // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
+            var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+        
+            // Default intensity is 1. Let's dim the light a small amount
+            light.intensity = 0.7;
+        
+            //Create scene ,by import external models
+        
+            BABYLON.SceneLoader.Load("assets/", "model.obj", engine, function (scene) { 
+            // ...
+            });
+
+            // Our built-in 'sphere' shape. Params: name, subdivs, size, scene
+            var sphere = BABYLON.Mesh.CreateSphere("sphere1", 8, 2, scene);
+        
+            // Move the sphere upward 1/2 its height
+            sphere.position.y = 0;
+        
+            // Our built-in 'ground' shape. Params: name, width, depth, subdivs, scene
+            var box = BABYLON.Mesh.CreateBox("ground1", 5, scene);
+            box.position.y = 8;
+            
+            sphere.material = new BABYLON.StandardMaterial("s-mat", scene);
+            
+            scene.enablePhysics();
+            
+            sphere.physicsImpostor = new BABYLON.PhysicsImpostor(sphere, BABYLON.PhysicsImpostor.SphereImpostor, { mass: 1, restitution: 0.9 }, scene);
+            box.physicsImpostor = new BABYLON.PhysicsImpostor(box, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 0, restitution: 0.9 }, scene);
+        
+            var distanceJoint = new BABYLON.DistanceJoint({ maxDistance: 10 });
+            //sphere.physicsImpostor.addJoint(box.physicsImpostor, distanceJoint);
+            box.physicsImpostor.addJoint(sphere.physicsImpostor,distanceJoint);
+        
+            sphere.physicsImpostor.applyImpulse(new BABYLON.Vector3(4, 0, 0), sphere.getAbsolutePosition());
+            
+            
+            var pivotPos = box.getAbsolutePosition();
+            var SpherePos = sphere.getAbsolutePosition();
+            //draw chain lines
+            var myPoints = [
+                SpherePos,
+                pivotPos
+            ];
+            var lines = BABYLON.MeshBuilder.CreateLines("lines",  {points: myPoints},scene,true);
+             
+            
+            scene.registerBeforeRender(function() {
+                var pos2 =new BABYLON.Vector3(sphere.position.x,sphere.position.y,sphere.position.z);
+            myPoints = [
+                pos2,
+                new BABYLON.Vector3(0, 0, 0)
+            ];
+            //updateLines(mesh, path);
+            lines = BABYLON.Mesh.CreateLines(null,  {points: myPoints}, null, null, lines);
+            
+            });
+            return scene;
+        
+        };
+        
+        var scene = createScene()
+
+        engine.runRenderLoop(function () {
+            if (scene) {
+                scene.render();
+            }
+        });
+
+        // Resize
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+    </script>
+</body>
+</html>
